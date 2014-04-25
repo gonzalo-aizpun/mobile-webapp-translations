@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet" >
+        <title><%= title %></title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="page-header">
+                <h1><%= title %><h1>
+            </div>
+            
+            <div class="row">
+                <h4>Key <span class="label label-default"><%= key %></span> match with <span class="label label-default"><%= matchsLength %></span> files.</h4>
+                <% if (matchsLength > 0) { %>
+                    <div class="panel panel-default">
+                        <ul class="list-group">
+                            <% matchs.forEach(function(match){ %>
+                                <li class="list-group-item">
+                                    <h4>File: <%= match.file %></h4>
+                                    <% if (match.translation) { %>
+                                        <h4>Value: <%= match.translation %></h4>
+                                    <% } else { %>
+                                        <h4>Value: <span class="label label-danger">Not found</span></h4>
+                                    <% } %>
+                                </li>
+                            <% }) %>
+                        </ul>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </body>
+</html>
