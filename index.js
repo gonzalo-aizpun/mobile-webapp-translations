@@ -11,7 +11,8 @@ var app = express();
 // Middlewares
 // ===========================
 
-app.use(express.bodyParser());
+app.use(express.json());
+app.use(express.urlencoded());
 
 
 // Configurations
