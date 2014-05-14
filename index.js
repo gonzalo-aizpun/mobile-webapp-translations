@@ -51,7 +51,7 @@ app.set('view engine', 'html');
             }
 
             translation = line.split('","');
-            if (~translation[2].indexOf(keyword)) {
+            if (~translation[1].indexOf(keyword) || ~translation[2].indexOf(keyword)) {
                 matchs.push({
                     translation: {
                         key: translation[1],
@@ -142,3 +142,5 @@ app.set('view engine', 'html');
 })();
 
 app.listen(4000);
+
+console.log('Node run in port 4000');

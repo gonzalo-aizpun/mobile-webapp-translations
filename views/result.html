@@ -44,7 +44,7 @@
                         <ul class="list-group">
                             <% matchs.forEach(function(match){ %>
                                 <li class="list-group-item">
-                                    <h4>Key: <a href="/search/key/<%= match.translation.key %>"><%= match.translation.key %></a></h4>
+                                    <h4>Key: <a href="/search/key/<%= match.translation.key %>"><span class="keyword-value"><%= match.translation.key %></span></a></h4>
                                     <h4>Value:</h4> <span class="keyword-value"><%= match.translation.value %></span>
                                     <h4>Line in file: <%= match.index %></h4>
                                 </li>
