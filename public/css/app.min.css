@@ -1,0 +1,8 @@
+.highlight {background-color: yellow;}
+.keyword-value {margin-left: 15px; font-size: 18px;}
+.page-header h1 a.title,
+.page-header h1 a.title:hover {color: #222; text-decoration: none;}
+#progressBar {position: fixed; z-index: 999999; top: 0; left: 0; width: 0%; height: 2px; background: #f70; border-radius: 10%; -moz-transition: width 500ms ease-out,opacity 400ms linear; -ms-transition: width 500ms ease-out,opacity 400ms linear; -o-transition: width 500ms ease-out,opacity 400ms linear; -webkit-transition: width 500ms ease-out,opacity 400ms linear; transition: width 500ms ease-out,opacity 400ms linear;}
+#progressBar:before {position: absolute; content: ''; top: 0; opacity: 1; width: 15px; right: 0; height: 2px; box-shadow: #bd5901 1px 0 6px 2px; border-radius: 50%;}
+.menu-settings .setting {padding-left: 10px;}
+.navbar-collapse.in {overflow-y: visible;}

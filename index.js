@@ -2,12 +2,17 @@
 // Modules
 // ===========================
 
+var _ = require('underscore');
 var express = require('express');
 var ejs = require('ejs');
 var fs = require('fs');
 var csv = require('csv');
 var asynquence = require('asynquence');
 var app = express();
+var defaultSettings = {
+    file: 'en-US',
+    caseSensitive: true
+};
 
 
 // Middlewares
@@ -15,6 +20,7 @@ var app = express();
 
 app.use(express.json());
 app.use(express.urlencoded());
+app.use(express.static(__dirname + '/public'));
 
 
 // Configurations
@@ -47,33 +53,43 @@ var languages = [
     function handler(req, res) {
         res.render('index', {
             title: 'Keyword search',
-            languages: languages
+            languages: languages,
+            settings: defaultSettings
         });
     }
 })();
 
 (function search() {
-    app.post('/search', handler);
+    app.post('/search/:keyword?', handler);
 
     function handler(req, res) {
         var matchs = [];
-        var language = req.body.language;
         var keyword = req.body.keyword;
+        var language = req.body.language;
+        var settings = req.body.settings;
+        var regexp;
 
-        function fail(err) {
-            if (err) {
-                console.log(err);
-            }
-            success(' - ERROR');
+        function prepare(done) {
+            settings = settings || {};
+            settings = _.defaults(settings, {
+                caseSensitive: !!settings.caseSensitive
+            }, defaultSettings);
+
+            regexp = ['.*', keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\s'), '.*'].join('');
+            regexp = new RegExp(regexp, (settings.caseSensitive ? undefined : 'i'));
+
+            done();
         }
 
         function findMatchs(done) {
-            var filename = [__dirname, '/translations/smaug-translations-0.1.161/', language, '.csv'].join('');
+            var filename = [__dirname, '/translations/smaug-translations/', language, '.csv'].join('');
+            var id = 0;
 
             csv().from(filename).on('record', function onData(record, index) {
                 record = record.slice(1);
-                if (~record[0].indexOf(keyword) || ~record[1].indexOf(keyword)) {
+                if (record[0].match(regexp) || record[1].match(regexp)) {
                     matchs.push({
+                        id: ++id,
                         translation: {
                             key: record[0],
                             value: record[1]
@@ -84,58 +100,64 @@ var languages = [
             }).on('end', done);
         }
 
-        function success(message) {
-            var title = 'Result - Keyword search';
+        function success() {
+            res.json({
+                state: {
+                    title: 'Result - Keyword search',
+                    key: false,
+                    keyword: keyword,
+                    matchsLength: matchs.length,
+                    file: language,
+                    languages: languages
+                },
+                models: matchs
+            });
+        }
 
-            if (typeof message === 'string') {
-                title += message;
+        function fail(err) {
+            if (err) {
+                console.log(err ? err.stack || err : 'Internal error');
             }
-            res.render('result', {
-                title: title,
-                keyword: keyword,
-                matchsLength: matchs.length,
-                matchs: matchs,
-                file: language,
-                languages: languages
+            res.json(503, {
+                error: (err ? err.message : '') || 'Internal error'
             });
         }
 
         asynquence().or(fail)
+            .then(prepare)
             .then(findMatchs)
             .val(success);
     }
 })();
 
 (function key() {
-    app.get('/search/key/:key', handler);
+    app.post('/search/key/:key', handler);
 
     function handler(req, res) {
-        var matchs = [];
+        var matchs = {};
         var key = req.param('key', '');
-        var keyword = req.param('keyword', '');
-        var language = req.param('language', '');
-
-        function fail(err) {
-            if (err) {
-                console.log(err);
-            }
-            success(' - ERROR');
-        }
+        var keyword = req.body.keyword;
+        var language = req.body.language;
+        var settings = req.body.settings;
 
         function findMatchs(done) {
             var promise = asynquence().or(done.fail);
+            var id = 0;
 
             languages.forEach(function findKeyInFile(file) {
                 promise.then(function findMatch(next) {
-                    var filename = [__dirname, '/translations/smaug-translations-0.1.161/', file, '.csv'].join('');
+                    var filename = [__dirname, '/translations/smaug-translations/', file, '.csv'].join('');
 
                     csv().from(filename).on('record', function onData(record, index) {
                         record = record.slice(1);
-                        if (record[0] === key) {
-                            matchs.push({
-                                translation: record[1],
+                        if (record[0] === key && !matchs[file]) {
+                            matchs[file] = {
+                                id: ++id,
+                                translation: {
+                                    value: record[1]
+                                },
                                 file: file
-                            });
+                            };
                             this.pause();
                             this.end();
                         }
@@ -145,20 +167,28 @@ var languages = [
             promise.val(done);
         }
 
-        function success(message) {
-            var title = 'Key - Keyword search';
+        function success() {
+            matchs = _.values(matchs);
 
-            if (typeof message === 'string') {
-                title += message;
+            res.json({
+                state: {
+                    title: 'Key - Keyword search',
+                    key: key,
+                    keyword: keyword,
+                    matchsLength: matchs.length,
+                    file: language,
+                    languages: languages
+                },
+                models: matchs
+            });
+        }
+
+        function fail(err) {
+            if (err) {
+                console.log(err ? err.stack || err : 'Internal error');
             }
-            res.render('key', {
-                title: title,
-                key: key,
-                keyword: keyword,
-                matchsLength: matchs.length,
-                matchs: matchs,
-                file: language,
-                languages: languages
+            res.json(503, {
+                error: (err ? err.message : '') || 'Internal error'
             });
         }
 
@@ -166,7 +196,14 @@ var languages = [
             .then(findMatchs)
             .val(success);
     }
+})();
 
+(function notFound() {
+    app.get('*', handler);
+
+    function handler(req, res) {
+        res.redirect(302, '/');
+    }
 })();
 
 app.listen(4000);
