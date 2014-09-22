@@ -1,38 +1,372 @@
 <html>
     <head>
-        <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet" >
         <title><%= title %></title>
-        <style type="text/css" >
-            .page-header h1 a.title,
-            .page-header h1 a.title:hover {color: #222; text-decoration: none;}
-        </style>
+        <link href="/css/bootstrap.min.css" rel="stylesheet" >
+        <link href="/css/bootstrap-theme.min.css" rel="stylesheet" >
+        <link href="/css/font-awesome.min.css" rel="stylesheet">
+        <link href="/css/app.min.css" rel="stylesheet">
     </head>
     <body>
+        <div id="progressBar" style="width: 0px; display: none;"></div>
         <div class="container">
-            <div class="page-header">
-                <h1>
-                    <a href="/" class="title"><%= title %></a>
-                </h1>
+
+            <nav id="header" class="navbar navbar-default" role="navigation">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                        <span class="sr-only">Desplegar navegación</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#"><%= title %></a>
+                </div>
+
+                <div class="collapse navbar-collapse navbar-ex1-collapse">
+                    <form method="post" action="/search" class="form-search navbar-form navbar-right" role="search">
+                        <div class="form-group">
+                            <select class="form-control" id="language" name="language" tabindex="2" >
+                                <% languages.forEach(function(language, i) { %>
+                                    <option value="<%= language %>" <% if (language === settings.file) { %>selected="selected"<% } %> ><%= language %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="sr-only" for="keyword">Keyword</label>
+                            <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Keyword and key" tabindex="0" >
+                        </div>
+                        <div class="btn-group">
+                            <a href="#search" class="btn btn-default btn-search"  data-loading-text="Searching..." tabindex="1" >
+                                Search
+                            </a>
+                            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" tabindex="3" >
+                                <i class="fa fa-cog fa-lg"></i> More options
+                                <span class="sr-only">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu menu-settings" role="menu">
+                                <li class="setting" >
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" id="caseSensitive" name="settings[caseSensitive]" <% if (settings.caseSensitive) { %>checked="checked"<% } %>> Case sensitive
+                                        </label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+            </nav>
+            
+            <div id="state" class="row">
             </div>
             
             <div class="row">
-                <form method="post" action="/search" class="form-inline">
-                    <div class="form-group">
-                        <select class="form-control" id="language" name="language" >
-                            <% languages.forEach(function(language, i) { %>
-                                <option value="<%= language %>" <% if (!i) { %>selected="selected"<% } %> ><%= language %></option>
-                            <% }) %>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="sr-only" for="keyword">Keyword</label>
-                        <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Keyword or key">
-                    </div>
-                    <div class="form-group">
-                        <input type="submit" class="btn btn-default" value="Search">
-                    </div>
-                </form>
+                <div class="panel panel-default">
+                    <ul id="main" class="list-group">
+                    </ul>
+                </div>
             </div>
+
         </div>
+
+        <script type="text/template" id="tmpl-state" >
+            {{ if (key) { }}
+                <h4>Key <span class="label label-default">{{= key }}</span> match with <span class="label label-default">{{= matchsLength }}</span> files.</h4>
+            {{ } else if (!keyword) { }}
+                <h4>Show all lines of file <span class="label label-default">{{= file }}</span> (<span class="label label-default">{{= matchsLength }}</span> lines).</h4>
+            {{ } else { }}
+                <h4>You search in file <span class="label label-default">{{= file }}</span> the keyword <span class="label label-default">{{= keyword }}</span> match with <span class="label label-default">{{= matchsLength }}</span> lines.</h4>
+            {{ } }}
+        </script>
+
+        <script type="text/template" id="tmpl-translate" >
+            <h4>
+                Key: <a href="#search/key/{{= translation.key }}" class="keyword-key" >
+                    <span class="keyword-value">{{= translation.key }}</span>
+                </a>
+            </h4>
+            <h4>Value:</h4> <span class="keyword-value">{{= translation.value }}</span>
+            <h4>Line in file: {{= index }}</h4>
+        </script>
+        
+        <script type="text/template" id="tmpl-key" >
+            <h4>File: {{= file }}</h4>
+            {{ if (translation && translation.value) { }}
+                <h4>Value: <span class="keyword-value">{{- translation.value }}</span></h4>
+            {{ } else { }}
+                <h4>Value: <span class="label label-danger">Not found</span></h4>
+            {{ } }}
+        </script>
+
+        <script src="/js/underscore.min.js" type="text/javascript" ></script>
+        <script src="/js/jquery.min.js" type="text/javascript" ></script>
+        <script src="/js/bootstrap.min.js" type="text/javascript" ></script>
+        <script src="/js/backbone.min.js" type="text/javascript" ></script>
+        <script src="/js/querystring.min.js" type="text/javascript" ></script>
+        <script src="/js/app.js" type="text/javascript" ></script>
+        <script type="text/javascript" >
+            $(document).ready(function() {
+                _.templateSettings = {
+                    evaluate: /\{\{([\s\S]+?)\}\}/g,
+                    interpolate: /\{\{=([\s\S]+?)\}\}/g,
+                    escape: /\{\{-([\s\S]+?)\}\}/g
+                };
+
+                // -----------------------------------------------------------------------------------------
+
+                var BaseModel = Backbone.Model.extend({
+                    idAttribute: 'id',
+
+                    prepare: function() {
+                        var translation = this.get('translation');
+
+                        translation.value = _.escape(translation.value);
+                        this.set({
+                            translation: translation
+                        });
+                        return this;
+                    }
+                });
+
+                var BaseView = Backbone.View.extend({
+                    tagName: 'li',
+                    className: 'list-group-item',
+
+                    initialize: function() {
+                        this.on('render', this.onRender, this);
+                    },
+                    template: function() {
+                        if (!this.compileTemplate) {
+                            this.compileTemplate = $(this.templateName).html();
+                        }
+                        return _.template(this.compileTemplate);
+                    },
+                    render: function() {
+                        var template = this.template();
+
+                        this.$el.html(template(this.model.toJSON()));
+                        this.trigger('render');
+                        return this;
+                    },
+                    onRender: $.noop
+                });
+
+                // -----------------------------------------------------------------------------------------
+
+                var State = Backbone.Model.extend({});
+
+                var StateView = Backbone.View.extend({
+                    el: '#state',
+                    template: _.template($('#tmpl-state').html()),
+
+                    initialize: function() {
+                        BaseView.prototype.initialize.apply(this, arguments);
+                        this.listenTo(state, 'change', this.render);
+                    },
+                    render: function() {
+                        var _state = state.toJSON();
+
+                        _state.keyword =  _.escape(_state.keyword)
+                        this.$el.empty();
+                        this.$el.html(this.template(_state));
+                        return this;
+                    }
+                });
+
+                // -----------------------------------------------------------------------------------------
+
+                var Translate = BaseModel.extend({});
+
+                var TranslateList = Backbone.Collection.extend({
+                    model: Translate,
+
+                    url: function() {
+                        return ['/search/', encodeURIComponent($keyword.val())].join('');
+                    }
+                });
+
+                var TranslateView = BaseView.extend({
+                    templateName: '#tmpl-translate',
+
+                    onRender: function() {
+                        var keyword = $keyword.val();
+
+                        if (keyword) {
+                            new app.Highlight({
+                                el: this.$('.keyword-value'),
+                                pattern: keyword, 
+                                caseSensitive: $('#caseSensitive').is(':checked')
+                            });
+                        }
+                    }
+                });
+
+                // -----------------------------------------------------------------------------------------
+
+                var Key = BaseModel.extend({});
+
+                var KeyList = Backbone.Collection.extend({
+                    model: Key,
+
+                    url: function(key) {
+                        return ['/search/key/', encodeURIComponent(key)].join('');
+                    }
+                });
+
+                var KeyView = BaseView.extend({
+                    templateName: '#tmpl-key'
+                });
+
+                // -----------------------------------------------------------------------------------------
+
+                var Router = Backbone.Router.extend({
+                    routes: {
+                        "search/(:keyword)": "search",
+                        "search/key/:key": "searchKey"
+                    },
+
+                    search: function(keyword) {
+                        if (progress.started) {
+                            return false;
+                        }
+                        progress.start();
+
+                        $search.button('loading');
+                        $.ajax({
+                            url: _.result(translates, 'url'),
+                            method: 'post',
+                            cache: false,
+                            data: this.formParams({
+                                keyword: keyword
+                            })
+                        })
+                        .done(success)
+                        .fail(this.fail)
+                        .always(always);
+
+                        function success(data) {
+                            app.instance.trigger('clean', keyword);
+                            state.set(data.state);
+                            translates.set(data.models);
+                        }
+
+                        function always() {
+                            progress.stop();
+                            $search.button('reset');
+                        }
+                    },
+                    searchKey: function(key, index) {
+                        if (progress.started) {
+                            return false;
+                        }
+                        progress.start();
+
+                        $.ajax({
+                            url: keys.url(key),
+                            method: 'post',
+                            cache: false,
+                            data: this.formParams({
+                                key: key
+                            })
+                        })
+                        .done(success)
+                        .fail(this.fail)
+                        .always(always);
+
+                        function success(data) {
+                            app.instance.trigger('clean');
+                            state.set(data.state);
+                            keys.set(data.models);
+                        }
+
+                        function always() {
+                            progress.stop();
+                        }
+                    },
+                    fail: function(res) {
+                        try {
+                            res = JSON.parse(res.responseText);
+                        } catch(e) {
+                            res = {
+                                error: 'Internal error'
+                            };
+                        }
+                        alert(res.error);
+                    },
+                    formParams: function(params) {
+                        var formParams = $('.form-search').serialize();
+                        
+                        return _.extend(querystring.parse(formParams), params);
+                    }
+                });
+
+                // -----------------------------------------------------------------------------------------
+
+                var AppView = Backbone.View.extend({
+                    el: '#main',
+                    
+                    initialize: function() {
+                        this.on('clean', this.onClean, this);
+
+                        this.listenTo(translates, 'add', this.addTranslate);
+                        this.listenTo(keys, 'add', this.addKey);
+                    },
+                    addTranslate: function(translate) {
+                        this.add(translate, TranslateView);
+                    },
+                    addKey: function(key) {
+                        this.add(key, KeyView);
+                    },
+                    add: function(model, View) {
+                        var view = new View({
+                            model: model.prepare()
+                        });
+                        
+                        this.$el.append(view.render().el);
+                    },
+                    onClean: function(keyword) {
+                        translates.reset();
+                        keys.reset();
+                        this.$el.empty();
+
+                        if (keyword) {
+                            $keyword.val(keyword);
+                        }
+                    }
+                });
+
+                var progress = new app.ProgressBar;
+                var translates = new TranslateList;
+                var keys = new KeyList;
+                var state = new State;
+                var router = new Router;
+                var $search = $('.btn-search');
+                var $keyword = $('.form-search #keyword');
+
+                app.instance = new AppView;
+                
+                new StateView;
+
+                Backbone.history.start();
+
+                $search.on('click', function(e) {
+                    $search.attr('href', ['#search/', encodeURIComponent($keyword.val())].join(''));
+                    return true;
+                });
+
+                $('.form-search').on('submit', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    router.navigate(['#search/', encodeURIComponent($keyword.val())].join(''), {
+                        trigger: true
+                    });
+                    return false;
+                });
+
+                $('.menu-settings li, .menu-settings input, .menu-settings label').on('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+        </script>
     </body>
 </html>
