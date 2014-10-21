@@ -75,7 +75,7 @@ var languages = [
                 caseSensitive: !!settings.caseSensitive
             }, defaultSettings);
 
-            regexp = ['.*', keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\s'), '.*'].join('');
+            regexp = ['.*', keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\\s'), '.*'].join('');
             regexp = new RegExp(regexp, (settings.caseSensitive ? undefined : 'i'));
 
             done();
