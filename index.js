@@ -75,7 +75,7 @@ var languages = [
                 caseSensitive: !!settings.caseSensitive
             }, defaultSettings);
 
-            regexp = ['.*', keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\s'), '.*'].join('');
+            regexp = ['.*', keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\\s'), '.*'].join('');
             regexp = new RegExp(regexp, (settings.caseSensitive ? undefined : 'i'));
 
             done();
@@ -93,7 +93,7 @@ var languages = [
                         translation: {
                             key: record[0],
                             value: record[1]
-                        }, 
+                        },
                         index: (index + 1)
                     });
                 }
