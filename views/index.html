@@ -18,7 +18,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="#"><%= title %></a>
+                    <a class="navbar-brand" href="/"><%= title %></a>
                 </div>
 
                 <div class="collapse navbar-collapse navbar-ex1-collapse">
@@ -43,6 +43,13 @@
                                 <span class="sr-only">Toggle Dropdown</span>
                             </button>
                             <ul class="dropdown-menu menu-settings" role="menu">
+                                <!--li class="setting" >
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" id="allLanguages" name="settings[allLanguages]" <% if (settings.allLanguages) { %>checked="checked"<% } %>> All languages (Aprox 4 min.)
+                                        </label>
+                                    </div>
+                                </li-->
                                 <li class="setting" >
                                     <div class="checkbox">
                                         <label>
@@ -73,6 +80,8 @@
                 <h4>Key <span class="label label-default">{{= key }}</span> match with <span class="label label-default">{{= matchsLength }}</span> files.</h4>
             {{ } else if (!keyword) { }}
                 <h4>Show all lines of file <span class="label label-default">{{= file }}</span> (<span class="label label-default">{{= matchsLength }}</span> lines).</h4>
+            {{ } else if (allLanguages) { }}
+                <h4>You search in <span class="label label-default">all</span> files the keyword <span class="label label-default">{{= keyword }}</span> match with <span class="label label-default">{{= matchsLength }}</span> lines.</h4>
             {{ } else { }}
                 <h4>You search in file <span class="label label-default">{{= file }}</span> the keyword <span class="label label-default">{{= keyword }}</span> match with <span class="label label-default">{{= matchsLength }}</span> lines.</h4>
             {{ } }}
@@ -82,8 +91,7 @@
             <h4>
                 Key: <a href="#search/key/{{= translation.key }}" class="keyword-key" >
                     <span class="keyword-value">{{= translation.key }}</span>
-                </a><br>
-                {{= '{{ dictionary["' }}{{= translation.key }}"] }}
+                </a>
             </h4>
             <h4>Value:</h4> <span class="keyword-value">{{= translation.value }}</span>
             <h4>Line in file: {{= index }}</h4>
@@ -92,7 +100,7 @@
         <script type="text/template" id="tmpl-key" >
             <h4>File: {{= file }}</h4>
             {{ if (translation && translation.value) { }}
-                <h4>Value: <span class="keyword-value">{{- translation.value }}</span></h4>
+                <h4>Value: <span class="keyword-value">{{= translation.value }}</span></h4>
             {{ } else { }}
                 <h4>Value: <span class="label label-danger">Not found</span></h4>
             {{ } }}
@@ -194,7 +202,7 @@
                         if (keyword) {
                             new app.Highlight({
                                 el: this.$('.keyword-value'),
-                                pattern: keyword,
+                                pattern: keyword, 
                                 caseSensitive: $('#caseSensitive').is(':checked')
                             });
                         }
@@ -291,7 +299,6 @@
                                 error: 'Internal error'
                             };
                         }
-                        alert(res.error);
                     },
                     formParams: function(params) {
                         var formParams = $('.form-search').serialize();
@@ -341,6 +348,7 @@
                 var state = new State;
                 var router = new Router;
                 var $search = $('.btn-search');
+                var $form = $('.form-search');
                 var $keyword = $('.form-search #keyword');
 
                 app.instance = new AppView;
@@ -354,7 +362,7 @@
                     return true;
                 });
 
-                $('.form-search').on('submit', function(e) {
+                $form.on('submit', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -367,6 +375,8 @@
                 $('.menu-settings li, .menu-settings input, .menu-settings label').on('click', function(e) {
                     e.stopPropagation();
                 });
+
+                $keyword.focus();
             });
         </script>
     </body>

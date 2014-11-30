@@ -3,5 +3,7 @@
 module.exports = function(grunt) {
     require('./grunt')(grunt);
 
-    grunt.registerTask('translate', ['exec:removeTranslations', 'translations', 'copy', 'exec:removeTranslations']);
+    grunt.registerTask('translate', ['exec:removeJsTranslations', 'translations', 'copy']);
+
+    grunt.registerTask('default', ['translate']);
 };
