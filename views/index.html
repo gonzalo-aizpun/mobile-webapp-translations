@@ -302,7 +302,7 @@
                     },
                     formParams: function(params) {
                         var formParams = $('.form-search').serialize();
-                        
+
                         return _.extend(querystring.parse(formParams), params);
                     }
                 });
@@ -311,7 +311,7 @@
 
                 var AppView = Backbone.View.extend({
                     el: '#main',
-                    
+
                     initialize: function() {
                         this.on('clean', this.onClean, this);
 
