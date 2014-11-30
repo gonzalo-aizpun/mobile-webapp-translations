@@ -62,10 +62,10 @@
                     </form>
                 </div>
             </nav>
-
+            
             <div id="state" class="row">
             </div>
-
+            
             <div class="row">
                 <div class="panel panel-default">
                     <ul id="main" class="list-group">
@@ -91,13 +91,12 @@
             <h4>
                 Key: <a href="#search/key/{{= translation.key }}" class="keyword-key" >
                     <span class="keyword-value">{{= translation.key }}</span>
-                </a><br>
-                {{= '{{ dictionary["' }}{{= translation.key }}"] }}
+                </a>
             </h4>
             <h4>Value:</h4> <span class="keyword-value">{{= translation.value }}</span>
             <h4>Line in file: {{= index }}</h4>
         </script>
-
+        
         <script type="text/template" id="tmpl-key" >
             <h4>File: {{= file }}</h4>
             {{ if (translation && translation.value) { }}
@@ -203,7 +202,7 @@
                         if (keyword) {
                             new app.Highlight({
                                 el: this.$('.keyword-value'),
-                                pattern: keyword,
+                                pattern: keyword, 
                                 caseSensitive: $('#caseSensitive').is(':checked')
                             });
                         }
@@ -293,7 +292,6 @@
                         }
                     },
                     fail: function(res) {
-                        console.log(res);
                         try {
                             res = JSON.parse(res.responseText);
                         } catch(e) {
@@ -301,11 +299,10 @@
                                 error: 'Internal error'
                             };
                         }
-                        // alert(res.error);
                     },
                     formParams: function(params) {
                         var formParams = $('.form-search').serialize();
-
+                        
                         return _.extend(querystring.parse(formParams), params);
                     }
                 });
@@ -314,7 +311,7 @@
 
                 var AppView = Backbone.View.extend({
                     el: '#main',
-
+                    
                     initialize: function() {
                         this.on('clean', this.onClean, this);
 
@@ -331,7 +328,7 @@
                         var view = new View({
                             model: model.prepare()
                         });
-
+                        
                         this.$el.append(view.render().el);
                     },
                     onClean: function(keyword) {
@@ -355,7 +352,7 @@
                 var $keyword = $('.form-search #keyword');
 
                 app.instance = new AppView;
-
+                
                 new StateView;
 
                 Backbone.history.start();
@@ -370,8 +367,7 @@
                     e.stopPropagation();
 
                     router.navigate(['#search/', encodeURIComponent($keyword.val())].join(''), {
-                        trigger: true,
-                        replace: true
+                        trigger: true
                     });
                     return false;
                 });
