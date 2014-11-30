@@ -8,11 +8,10 @@ var ejs = require('ejs');
 var fs = require('fs');
 var csv = require('csv');
 var asynquence = require('asynquence');
+var ProgressBar = require('progress');
+var config = require('./config');
 var app = express();
-var defaultSettings = {
-    file: 'en-US',
-    caseSensitive: true
-};
+var translations = {};
 
 
 // Middlewares
@@ -34,14 +33,29 @@ app.set('view engine', 'html');
 // Constants
 // ===========================
 
-var languages = [
-    'en-US', 'es-AR', 'es-ES', 'es-EC', 'es-SV', 'fr-FR', 'ht-HT', 'ja-JP', 'ml-IN', 'no-NO', 'ro-RO', 'sr-RS',
-    'te-IN', 'uk-UA', 'ar-AE', 'ca-ES', 'en-IN', 'bs-BA', 'es-VZ', 'gu-IN', 'hu-HU', 'kn-IN', 'mr-IN', 'pa-PK',
-    'ru-RU', 'sv-SE', 'th-TH', 'ur-PK', 'ar-EG', 'cs-CZ', 'af-ZA', 'es-GT', 'et-EE', 'he-IL', 'id-ID', 'ko-KR',
-    'ms-MY', 'pl-PL', 'si-LK', 'sw-TZ', 'th-TW', 'vi-VN', 'bg-BG', 'da-DK', 'el-GR', 'es-MX', 'fi-FI', 'hi-IN',
-    'is-IS', 'lt-LT', 'nl-BG', 'pt-BR', 'sk-SK', 'tl-PH', 'zh-CN', 'bn-BD', 'de-DE', 'es-CO', 'es-PE', 'fr-CA',
-    'hr-HR', 'it-IT', 'lv-LV', 'nl-NL', 'pt-PT', 'sl-SI', 'ta-IN', 'tr-TR', 'zh-TW'
-];
+var LANGUAGES = config.get(['languages', 'list']);
+var DEFAULT_LANGUAGE = config.get(['languages', 'default']);
+var DEFAULT_SETTING = _.defaults({}, config.get('settings'), {
+    file: DEFAULT_LANGUAGE
+});
+
+
+// Helpers
+// ===========================
+
+function getLanguage(language) {
+    var file = translations[language];
+
+    if (!file) {
+        try {
+            translations[language] = file = require('./translations/' + language);
+        } catch(e) {
+            console.error('Language', language, 'not exists. Search in default', DEFAULT_LANGUAGE, e);
+            file = translations[DEFAULT_LANGUAGE];
+        }
+    }
+    return file;
+}
 
 
 // Routes
@@ -53,8 +67,8 @@ var languages = [
     function handler(req, res) {
         res.render('index', {
             title: 'Keyword search',
-            languages: languages,
-            settings: defaultSettings
+            languages: LANGUAGES,
+            settings: DEFAULT_SETTING
         });
     }
 })();
@@ -67,37 +81,53 @@ var languages = [
         var keyword = req.body.keyword;
         var language = req.body.language;
         var settings = req.body.settings;
+        var languages = LANGUAGES;
         var regexp;
 
         function prepare(done) {
             settings = settings || {};
             settings = _.defaults(settings, {
-                caseSensitive: !!settings.caseSensitive
-            }, defaultSettings);
+                caseSensitive: !!settings.caseSensitive,
+                allLanguages: !!settings.allLanguages
+            }, DEFAULT_SETTING);
 
             regexp = ['.*', keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\\s'), '.*'].join('');
             regexp = new RegExp(regexp, (settings.caseSensitive ? undefined : 'i'));
 
+            if (!settings.allLanguages) {
+                languages = [language];
+            }
             done();
         }
 
         function findMatchs(done) {
-            var filename = [__dirname, '/translations/smaug-translations/', language, '.csv'].join('');
+            var bar = new ProgressBar('searching keyword \"' + keyword + '\" [:bar] :percent :etas', {
+                complete: '=',
+                incomplete: ' ',
+                width: 50,
+                total: languages.length
+            });
             var id = 0;
 
-            csv().from(filename).on('record', function onData(record, index) {
-                record = record.slice(1);
-                if (record[0].match(regexp) || record[1].match(regexp)) {
-                    matchs.push({
-                        id: ++id,
-                        translation: {
-                            key: record[0],
-                            value: record[1]
-                        }, 
-                        index: (index + 1)
-                    });
-                }
-            }).on('end', done);
+            console.log();
+            languages.forEach(function findKeyword(language, index) {
+                bar.tick(1);
+                _.each(getLanguage(language), function findMatch(value, key) {
+                    key = _.unescape(key);
+                    if (_.unescape(key).match(regexp) || value.value.match(regexp)) {
+                        matchs.push({
+                            id: ++id,
+                            translation: {
+                                key: key,
+                                value: value.value
+                            },
+                            index: (value.index + 1)
+                        });
+                    }
+                });
+            });
+            console.log();
+            done();
         }
 
         function success() {
@@ -108,16 +138,15 @@ var languages = [
                     keyword: keyword,
                     matchsLength: matchs.length,
                     file: language,
-                    languages: languages
+                    languages: LANGUAGES,
+                    allLanguages: settings.allLanguages
                 },
                 models: matchs
             });
         }
 
         function fail(err) {
-            if (err) {
-                console.log(err ? err.stack || err : 'Internal error');
-            }
+            console.log(err.stack || 'Internal error');
             res.json(503, {
                 error: (err ? err.message : '') || 'Internal error'
             });
@@ -134,42 +163,32 @@ var languages = [
     app.post('/search/key/:key', handler);
 
     function handler(req, res) {
-        var matchs = {};
+        var matchs = [];
         var key = req.param('key', '');
         var keyword = req.body.keyword;
         var language = req.body.language;
         var settings = req.body.settings;
 
         function findMatchs(done) {
-            var promise = asynquence().or(done.fail);
             var id = 0;
 
-            languages.forEach(function findKeyInFile(file) {
-                promise.then(function findMatch(next) {
-                    var filename = [__dirname, '/translations/smaug-translations/', file, '.csv'].join('');
+            LANGUAGES.forEach(function findKey(language) {
+                var value = getLanguage(language)[_.escape(key)];
 
-                    csv().from(filename).on('record', function onData(record, index) {
-                        record = record.slice(1);
-                        if (record[0] === key && !matchs[file]) {
-                            matchs[file] = {
-                                id: ++id,
-                                translation: {
-                                    value: record[1]
-                                },
-                                file: file
-                            };
-                            this.pause();
-                            this.end();
-                        }
-                    }).on('end', next);
-                });
+                if (value) {
+                    matchs.push({
+                        id: ++id,
+                        translation: {
+                            value: value.value
+                        },
+                        file: language
+                    });
+                }
             });
-            promise.val(done);
+            done();
         }
 
         function success() {
-            matchs = _.values(matchs);
-
             res.json({
                 state: {
                     title: 'Key - Keyword search',
@@ -177,16 +196,14 @@ var languages = [
                     keyword: keyword,
                     matchsLength: matchs.length,
                     file: language,
-                    languages: languages
+                    languages: LANGUAGES
                 },
                 models: matchs
             });
         }
 
         function fail(err) {
-            if (err) {
-                console.log(err ? err.stack || err : 'Internal error');
-            }
+            console.log(err.stack || 'Internal error');
             res.json(503, {
                 error: (err ? err.message : '') || 'Internal error'
             });

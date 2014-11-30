@@ -1,2 +1,4 @@
 node_modules
 npm-debug.log
+translations/csv-translations
+translations/translations-tmp
