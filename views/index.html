@@ -62,10 +62,10 @@
                     </form>
                 </div>
             </nav>
-            
+
             <div id="state" class="row">
             </div>
-            
+
             <div class="row">
                 <div class="panel panel-default">
                     <ul id="main" class="list-group">
@@ -96,7 +96,7 @@
             <h4>Value:</h4> <span class="keyword-value">{{= translation.value }}</span>
             <h4>Line in file: {{= index }}</h4>
         </script>
-        
+
         <script type="text/template" id="tmpl-key" >
             <h4>File: {{= file }}</h4>
             {{ if (translation && translation.value) { }}
@@ -328,7 +328,7 @@
                         var view = new View({
                             model: model.prepare()
                         });
-                        
+
                         this.$el.append(view.render().el);
                     },
                     onClean: function(keyword) {
@@ -352,7 +352,7 @@
                 var $keyword = $('.form-search #keyword');
 
                 app.instance = new AppView;
-                
+
                 new StateView;
 
                 Backbone.history.start();
