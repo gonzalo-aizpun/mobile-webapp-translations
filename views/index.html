@@ -24,7 +24,7 @@
                 <div class="collapse navbar-collapse navbar-ex1-collapse">
                     <form method="post" action="/search" class="form-search navbar-form navbar-right" role="search">
                         <div class="form-group">
-                            <select class="form-control" id="language" name="language" tabindex="2" >
+                            <select class="form-control" id="language" name="language" tabindex="3" >
                                 <% languages.forEach(function(language, i) { %>
                                     <option value="<%= language %>" <% if (language === settings.file) { %>selected="selected"<% } %> ><%= language %></option>
                                 <% }) %>
@@ -32,13 +32,13 @@
                         </div>
                         <div class="form-group">
                             <label class="sr-only" for="keyword">Keyword</label>
-                            <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Keyword and key" tabindex="0" >
+                            <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Keyword and key" tabindex="1" >
                         </div>
                         <div class="btn-group">
-                            <a href="#search" class="btn btn-default btn-search"  data-loading-text="Searching..." tabindex="1" >
+                            <a href="#search" class="btn btn-default btn-search"  data-loading-text="Searching..." tabindex="2" >
                                 Search
                             </a>
-                            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" tabindex="3" >
+                            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" tabindex="4" >
                                 <i class="fa fa-cog fa-lg"></i> More options
                                 <span class="sr-only">Toggle Dropdown</span>
                             </button>
