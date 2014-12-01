@@ -20,7 +20,7 @@ module.exports = function(grunt) {
         var rootDir = process.cwd() + '/translations';
         var tmpDir = rootDir + '/translations-tmp';
         var dest = tmpDir + '/translations.zip';
-        var languages = config.get('languages', []);
+        var languages = config.get(['languages', 'list'], []);
         var file;
 
         function fail(err) {

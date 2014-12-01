@@ -6,7 +6,7 @@ module.exports = function(grunt) {
     var csvs = [];
 
     (function copyCsvs() {
-        _.each(config.get('languages'), function(language) {
+        _.each(config.get(['languages', 'list']), function(language) {
             csvs.push({
                 src: ['translations-tmp/', language, '.csv'].join(''),
                 dest: ['translations/csv-translations/', language, '.csv'].join('')
