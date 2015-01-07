@@ -85,13 +85,19 @@ function getLanguage(language) {
         var regexp;
 
         function prepare(done) {
+            var prefix;
+            var subfix;
+
             settings = settings || {};
             settings = _.defaults(settings, {
+                exactPhrase: !!settings.exactPhrase,
                 caseSensitive: !!settings.caseSensitive,
                 allLanguages: !!settings.allLanguages
             }, DEFAULT_SETTING);
+            prefix = (settings.exactPhrase ? '^' : '.*');
+            subfix = (settings.exactPhrase ? '$' : '.*');
 
-            regexp = ['.*', keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\\s'), '.*'].join('');
+            regexp = [prefix, keyword.replace(/[$-\/?[-^{|}]/g, '\\$&').replace(' ', '\\s'), subfix].join('');
             regexp = new RegExp(regexp, (settings.caseSensitive ? undefined : 'i'));
 
             if (!settings.allLanguages) {

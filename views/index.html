@@ -35,9 +35,9 @@
                             <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Keyword and key" tabindex="1" >
                         </div>
                         <div class="btn-group">
-                            <a href="#search" class="btn btn-default btn-search"  data-loading-text="Searching..." tabindex="2" >
+                            <button type="button" href="#search" class="btn btn-default btn-search"  data-loading-text="Searching..." tabindex="2" >
                                 Search
-                            </a>
+                            </button>
                             <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" tabindex="4" >
                                 <i class="fa fa-cog fa-lg"></i> More options
                                 <span class="sr-only">Toggle Dropdown</span>
@@ -54,6 +54,13 @@
                                     <div class="checkbox">
                                         <label>
                                             <input type="checkbox" id="caseSensitive" name="settings[caseSensitive]" <% if (settings.caseSensitive) { %>checked="checked"<% } %>> Case sensitive
+                                        </label>
+                                    </div>
+                                </li>
+                                <li class="setting" >
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" id="exactPhrase" name="settings[exactPhrase]" <% if (settings.exactPhrase) { %>checked="checked"<% } %>> Exact phrase
                                         </label>
                                     </div>
                                 </li>
@@ -358,19 +365,26 @@
                 Backbone.history.start();
 
                 $search.on('click', function(e) {
-                    $search.attr('href', ['#search/', encodeURIComponent($keyword.val())].join(''));
-                    return true;
+                    return search(e, true);
                 });
 
                 $form.on('submit', function(e) {
+                    return search(e, false);
+                });
+
+                function search(e, response) {
                     e.preventDefault();
                     e.stopPropagation();
 
-                    router.navigate(['#search/', encodeURIComponent($keyword.val())].join(''), {
-                        trigger: true
+                    var path = ['#search/', encodeURIComponent($keyword.val())].join('');
+
+                    $search.attr('href', path);
+                    router.navigate(path, {
+                        trigger: true,
+                        force: true
                     });
-                    return false;
-                });
+                    return response;
+                }
 
                 $('.menu-settings li, .menu-settings input, .menu-settings label').on('click', function(e) {
                     e.stopPropagation();
