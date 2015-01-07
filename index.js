@@ -66,7 +66,7 @@ function getLanguage(language) {
 
     function handler(req, res) {
         res.render('index', {
-            title: 'Keyword search',
+            title: 'Translations',
             languages: LANGUAGES,
             settings: DEFAULT_SETTING
         });
@@ -139,7 +139,7 @@ function getLanguage(language) {
         function success() {
             res.json({
                 state: {
-                    title: 'Result - Keyword search',
+                    title: 'Translations :: Result',
                     key: false,
                     keyword: keyword,
                     matchsLength: matchs.length,
@@ -197,7 +197,7 @@ function getLanguage(language) {
         function success() {
             res.json({
                 state: {
-                    title: 'Key - Keyword search',
+                    title: 'Translations :: Result :: Key',
                     key: key,
                     keyword: keyword,
                     matchsLength: matchs.length,
